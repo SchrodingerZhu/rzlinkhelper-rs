@@ -18,14 +18,15 @@ mod config;
 mod compile;
 mod cmaker;
 mod linking;
-
+mod graph;
 #[derive(Deserialize, Serialize)]
 struct Progress {
     cmake: bool,
     remake: bool,
     cmaker: bool,
     compile_to_llvm: bool,
-    linking: bool
+    linking: bool,
+    gen_graph: bool
 }
 
 fn load_progress() -> Progress {
@@ -49,7 +50,8 @@ fn load_progress() -> Progress {
                     remake: false,
                     cmaker: false,
                     compile_to_llvm: false,
-                    linking: false
+                    linking: false,
+                    gen_graph: false
                 }
             }
             Err(e) => {
@@ -118,6 +120,12 @@ fn main() {
         info!("start linking");
         linking::linking(&collection);
         progress.linking = true;
+    }
+
+    if !progress.gen_graph {
+        info!("start generating call graph");
+        graph::gen_graph(&collection);
+        progress.gen_graph = true;
     }
     info!("all processes finished, if you want to re-run please delete the rz_build dir and the .progress file");
 

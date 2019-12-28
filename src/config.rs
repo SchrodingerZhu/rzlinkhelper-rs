@@ -16,6 +16,7 @@ pub struct Configuration {
     pub cmaker_executable: String,
     pub cmake_executable: String,
     pub remake_executable: String,
+    pub llvm_opt_executable: String,
 }
 
 pub(crate) fn parse_config() -> Configuration {
