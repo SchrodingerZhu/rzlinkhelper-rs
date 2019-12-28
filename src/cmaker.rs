@@ -113,7 +113,7 @@ pub fn run_cmaker() {
         error!("failed to run cmaker command, {:#?}", parsing.err().unwrap());
         exit(3);
     } else {
-        info!("remake log saved at {:?}", std::fs::canonicalize("cmaker.log").unwrap())
+        info!("cmaker log saved at {:?}", std::fs::canonicalize("cmaker.log").unwrap())
     }
 }
 

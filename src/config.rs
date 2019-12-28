@@ -8,7 +8,6 @@ use simd_json::serde as S;
 #[derive(Deserialize, Debug)]
 pub struct Configuration {
     pub callpass_library_path: String,
-    pub debug: bool,
     pub original_cxx_executable: String,
     pub original_cc_executable: String,
     pub targeted_cxx_executable: String,
