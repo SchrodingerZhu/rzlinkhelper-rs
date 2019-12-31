@@ -90,11 +90,12 @@ pub(crate) fn linking(c: Arc<Collection>) {
                                 .map(|x| obj_path.clone() + "/" +
                                     percent_encoding::percent_encode(x.as_bytes(), crate::FRAGMENT).to_string().as_str())
                                 .collect::<Vec<_>>();
+                            command.sort_unstable();
                             command.dedup_by(|x, y| x == y);
                             command.push(String::from("-o"));
                             command.push(a);
                             match std::process::Command::new(&crate::config::CONFIG.llvm_link_executable)
-                                .args(command)
+                                .args(&command)
                                 .spawn()
                                 .and_then(|mut x| x.wait()) {
                                 Ok(e) if e.success() => {
@@ -110,11 +111,13 @@ pub(crate) fn linking(c: Arc<Collection>) {
                                     info!("linked {}", link.target.abs_path);
                                 }
                                 Err(e) => {
-                                    error!("failed to link {}: {:#?}", link.target.abs_path, e);
+                                    error!("failed to link {}: {:?}\ncommand: {} {}", link.target.abs_path, e,
+                                           crate::config::CONFIG.llvm_link_executable, command.join(" "));
                                     std::process::exit(50);
                                 }
                                 Ok(c) => {
-                                    error!("failed to link {}: exit with {:#?}", link.target.abs_path, c);
+                                    error!("failed to link {}: exit with {:?}\ncommand: {} {}", link.target.abs_path, c,
+                                           crate::config::CONFIG.llvm_link_executable, command.join(" "));
                                     std::process::exit(50);
                                 }
                             }
