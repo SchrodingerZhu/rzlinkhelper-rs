@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use std::sync::Arc;
 use std::sync::atomic::*;
-use std::sync::atomic::Ordering::Relaxed;
+use std::sync::atomic::Ordering::{Relaxed, SeqCst};
 
 use hashbrown::{HashMap, HashSet};
 use log::*;
@@ -37,10 +37,11 @@ pub(crate) fn linking(c: Arc<Collection>) {
 
     c.scripts.iter().for_each(|x| {
         for i in &x.target.dependencies {
-            map.get_mut(i).map(|y| {
-                y.0.fetch_add(1, Ordering::SeqCst);
+            if map.get_mut(i).map(|y| {
                 y.1.push(Wrapper(x as _));
-            }).unwrap_or(());
+            }).is_some() {
+                map.get(x.target.abs_path.as_str()).unwrap().0.fetch_add(1, SeqCst);
+            };
         }
     });
 
