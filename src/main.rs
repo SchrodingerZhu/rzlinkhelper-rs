@@ -3,23 +3,25 @@ extern crate lazy_static;
 
 use std::io::Read;
 use std::process::exit;
+use std::sync::Arc;
 
 use log::*;
+use percent_encoding::{AsciiSet, CONTROLS};
 use serde::*;
 
 use crate::cmaker::{run_cmake, run_cmaker, run_remake};
-use percent_encoding::{AsciiSet, CONTROLS};
-use std::sync::Arc;
 
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 const FRAGMENT: &AsciiSet = &CONTROLS
     .add(b' ').add(b'"').add(b'<').add(b'>').add(b'`').add(b'/').add(b'\\');
+
 mod config;
 mod compile;
 mod cmaker;
 mod linking;
 mod graph;
+
 #[derive(Deserialize, Serialize)]
 struct Progress {
     cmake: bool,
@@ -27,7 +29,7 @@ struct Progress {
     cmaker: bool,
     compile_to_llvm: bool,
     linking: bool,
-    gen_graph: bool
+    gen_graph: bool,
 }
 
 fn load_progress() -> Progress {
@@ -52,7 +54,7 @@ fn load_progress() -> Progress {
                     cmaker: false,
                     compile_to_llvm: false,
                     linking: false,
-                    gen_graph: false
+                    gen_graph: false,
                 }
             }
             Err(e) => {
@@ -72,7 +74,7 @@ impl Drop for Progress {
         }
         serde_json::to_string_pretty(self)
             .map_err(|e| e.into())
-            .and_then(|c|std::fs::write(config::PWD.clone() + "/.progress", c))
+            .and_then(|c| std::fs::write(config::PWD.clone() + "/.progress", c))
             .unwrap_or_else(|e|
                 error!("failed to store progress: {}", e)
             );
@@ -111,7 +113,7 @@ fn main() {
         progress.cmaker = true;
     }
 
-    let collection = Arc::new(cmaker::get_collection(& build_dir));
+    let collection = Arc::new(cmaker::get_collection(&build_dir));
     if !progress.compile_to_llvm {
         info!("start compiling to llvm");
         compile::compile_to_llvm(collection.as_ref());
@@ -129,5 +131,4 @@ fn main() {
         progress.gen_graph = true;
     }
     info!("all processes finished, if you want to re-run please delete the rz_build dir and the .progress file");
-
 }

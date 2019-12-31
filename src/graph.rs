@@ -1,8 +1,9 @@
 use std::io::{BufRead, ErrorKind};
 use std::process::{exit, Stdio};
-use rayon::prelude::*;
+
 use log::*;
 use percent_encoding::percent_encode;
+use rayon::prelude::*;
 
 use crate::cmaker::Collection;
 

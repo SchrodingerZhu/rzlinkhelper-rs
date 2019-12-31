@@ -1,5 +1,7 @@
 use std::io::ErrorKind;
 use std::process::exit;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use log::*;
 use percent_encoding::percent_encode;
@@ -7,9 +9,6 @@ use rayon::prelude::*;
 
 use crate::cmaker::Collection;
 use crate::config::*;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
-
 
 pub fn compile_to_llvm(collection: &Collection) {
     let commands = &collection.compile;
