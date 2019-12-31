@@ -9,9 +9,10 @@ use serde::*;
 
 use crate::cmaker::{run_cmake, run_cmaker, run_remake};
 use percent_encoding::{AsciiSet, CONTROLS};
+use std::sync::Arc;
 
 #[global_allocator]
-static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 const FRAGMENT: &AsciiSet = &CONTROLS
     .add(b' ').add(b'"').add(b'<').add(b'>').add(b'`').add(b'/').add(b'\\');
 mod config;
@@ -110,21 +111,21 @@ fn main() {
         progress.cmaker = true;
     }
 
-    let collection = cmaker::get_collection(& build_dir);
+    let collection = Arc::new(cmaker::get_collection(& build_dir));
     if !progress.compile_to_llvm {
         info!("start compiling to llvm");
-        compile::compile_to_llvm(&collection);
+        compile::compile_to_llvm(collection.as_ref());
         progress.compile_to_llvm = true;
     }
     if !progress.linking {
         info!("start linking");
-        linking::linking(&collection);
+        linking::linking(collection.clone());
         progress.linking = true;
     }
 
     if !progress.gen_graph {
         info!("start generating call graph");
-        graph::gen_graph(&collection);
+        graph::gen_graph(collection.as_ref());
         progress.gen_graph = true;
     }
     info!("all processes finished, if you want to re-run please delete the rz_build dir and the .progress file");
