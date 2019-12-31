@@ -47,7 +47,6 @@ pub(crate) fn linking(c: Arc<Collection>) {
         let q = Arc::new(crossbeam::queue::SegQueue::new());
 
         c.scripts.par_iter().for_each(|m| {
-            let map = map.clone();
             let u = map.get(m.target.abs_path.as_str()).unwrap();
             if u.0.load(Relaxed) == 0 {
                 q.push(Wrapper(m as _))
