@@ -90,6 +90,7 @@ pub(crate) fn linking(c: Arc<Collection>) {
                                 .map(|x| obj_path.clone() + "/" +
                                     percent_encoding::percent_encode(x.as_bytes(), crate::FRAGMENT).to_string().as_str())
                                 .collect::<Vec<_>>();
+                            command.dedup_by(|x, y| x == y);
                             command.push(String::from("-o"));
                             command.push(a);
                             match std::process::Command::new(&crate::config::CONFIG.llvm_link_executable)
