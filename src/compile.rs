@@ -19,7 +19,21 @@ pub fn compile_to_llvm(collection: &Collection) {
         let mut state = 0;
         let mut real = String::new();
         let mut object = None;
+        let mut relative = None;
         for i in x.split_ascii_whitespace() {
+            if state == 10 {
+                relative.replace(String::from(i));
+                state = 20;
+                continue;
+            }
+            if i == "cd" {
+                state = 10;
+                continue;
+            }
+            if i == "&&" {
+                state = 0;
+                continue;
+            }
             if state == 1 {
                 object.replace(i);
                 state = 2;
@@ -44,7 +58,7 @@ pub fn compile_to_llvm(collection: &Collection) {
             }
         }
         trace!("[{}/{}] compiling {}: \n{}", count.fetch_add(1, Ordering::SeqCst), collection.compile.len(), object.as_ref().unwrap(), real);
-        (object.map(|x| percent_encode(x.as_bytes(), crate::FRAGMENT).to_string()).unwrap(), real)
+        (object.map(|x| percent_encode(x.as_bytes(), crate::FRAGMENT).to_string()).unwrap(), real, relative)
     });
 
     if std::fs::metadata(&a).is_err() {
@@ -65,7 +79,9 @@ pub fn compile_to_llvm(collection: &Collection) {
         } else {
             let mut commands = x.1.split_ascii_whitespace();
             std::process::Command::new(commands.next().unwrap())
-                .args(commands).spawn()
+                .args(commands)
+                .current_dir(x.2.as_ref().unwrap_or(&String::from(".")))
+                .spawn()
                 .and_then(|mut x| match x.wait() {
                     Ok(e) if e.success() => Ok(()),
                     Ok(e) => Err(std::io::Error::new(ErrorKind::Other, format!("failure with {:?}", e))),
