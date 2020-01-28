@@ -4,8 +4,16 @@ use std::process::{exit, Stdio};
 use log::*;
 use percent_encoding::percent_encode;
 use rayon::prelude::*;
-
+use serde::*;
 use crate::cmaker::Collection;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GraphNode {
+    name: String,
+    uses: usize,
+    address: usize,
+    call_list: Vec<String>
+}
 
 pub(crate) fn gen_graph(collection: &Collection) {
     let a = crate::config::PWD.clone() + "/rz_build/graph";
@@ -43,7 +51,9 @@ pub(crate) fn gen_graph(collection: &Collection) {
                         }
                         Err(e) => Err(e)
                     }
-                }).unwrap_or_else(|e| {
+                })
+                .and_then(|_| process_graph(output.as_str()))
+                .unwrap_or_else(|e| {
                 error!("failed to gen callgraph for {}: {}", m, e);
             });
         } else {
@@ -51,3 +61,73 @@ pub(crate) fn gen_graph(collection: &Collection) {
         }
     });
 }
+
+pub fn process_graph(path: &str) -> std::io::Result<()> {
+    let file = std::fs::read_to_string(path);
+
+    file.map(|f| {
+        let mut sections = Vec::new();
+        let mut buffer = Vec::new();
+        for l in f.lines() {
+            let l = l.trim();
+            if l.is_empty() {continue; }
+            if l.starts_with("Call graph node") && !buffer.is_empty() {
+                sections.push(buffer);
+                buffer = Vec::new();
+            }
+            buffer.push(String::from(l));
+        }
+        if !buffer.is_empty() {
+            sections.push(buffer);
+        }
+        sections }
+    )
+        .map(|x| x.iter().map(parse_node).collect::<Vec<_>>())
+        .map(|mut x| {
+            x.sort_unstable_by(|x, y| x.address.cmp(&y.address));
+            x.dedup_by(|x, y |x.address == y.address);
+            serde_json::to_string_pretty(&x).unwrap()
+        })
+        .and_then(|x| std::fs::write(path, x))
+
+}
+
+pub fn parse_node(section: &Vec<String>) -> GraphNode {
+    let head = section.first().unwrap();
+    let stream = head.split(' ');
+    let mut flag = 0;
+    let mut u : usize = 0;
+    let mut address : usize = 0;
+    let mut name : String = String::new();
+    for w in stream {
+        let w = w.trim();
+        if w.is_empty() {continue; }
+        if flag == 1 {
+            let content : Vec<&str> = w.trim_start_matches('\'').trim_end_matches('>').split("'<<").collect();
+            address = usize::from_str_radix(content[1].trim_start_matches("0x"), 16).unwrap();
+            name = String::from(content[0]);
+        }
+        if flag == 2 {
+            let content = w.trim_start_matches("#uses=");
+            u = content.parse().unwrap();
+            break;
+        }
+        if flag != 0 || w.ends_with(':') {
+            flag += 1;
+        }
+    }
+    let k = section[1..]
+        .iter()
+        .filter(|x|!x.contains("external node"))
+        .map(|x| x.split(' ').last().unwrap())
+        .map(|x| String::from(x
+            .trim_matches('\'')))
+        .collect();
+    GraphNode {
+        name,
+        uses: u,
+        address,
+        call_list: k
+    }
+}
+

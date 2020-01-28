@@ -149,7 +149,6 @@ pub struct Target {
     pub name: String,
     pub abs_path: String,
     pub dependencies: Vec<String>,
-    // will changed later
     pub target_type: u8,
 }
 
