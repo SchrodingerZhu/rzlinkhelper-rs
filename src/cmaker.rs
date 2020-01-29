@@ -11,7 +11,7 @@ pub fn run_cmake() {
     let compiling = std::fs::create_dir("rz_build")
         .and_then(|_| std::env::set_current_dir("./rz_build"))
         .and_then(|_| Command::new(&CONFIG.cmake_executable)
-            .arg("..").stdout(Stdio::piped()).stderr(Stdio::piped()).spawn())
+            .arg("..").args(&CONFIG.cmake_args).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn())
         .and_then(|mut child| {
             let res = child.wait();
             let mut out = String::new();
