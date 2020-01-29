@@ -73,11 +73,11 @@ pub fn compile_to_llvm(collection: &Collection) {
             exit(20);
         }
     );
-    commands.for_each(|x| {
+    commands.for_each(|x : (String, String, Option<String>)| {
         if std::fs::metadata(&x.0).is_ok() {
             info!("found {}, using cached", x.0);
         } else {
-            let mut commands = x.1.split_ascii_whitespace();
+            let mut commands = x.1.split_ascii_whitespace().map(|x|x.replace("\\\"", "\""));
             std::process::Command::new(commands.next().unwrap())
                 .args(commands)
                 .current_dir(x.2.as_ref().unwrap_or(&String::from(".")))
