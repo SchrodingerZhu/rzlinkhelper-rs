@@ -11,6 +11,8 @@ pub fn run_cmake() {
     let compiling = std::fs::create_dir("rz_build")
         .and_then(|_| std::env::set_current_dir("./rz_build"))
         .and_then(|_| Command::new(&CONFIG.cmake_executable)
+            .env("CC", &CONFIG.original_cc_executable)
+            .env("CXX", &CONFIG.original_cxx_executable)
             .arg(std::path::Path::new("../").join(&CONFIG.cmake_dir))
             .args(&CONFIG.cmake_args).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn())
         .and_then(|mut child| {
